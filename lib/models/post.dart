@@ -28,4 +28,9 @@ class Post {
       'body': body,
     };
   }
+
+  @override
+  String toString() {
+    return 'Post{Usuário: $userId, id: $id, Título: $title, Corpo: $body}';
+  }
 }

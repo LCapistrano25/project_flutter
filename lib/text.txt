@@ -1,0 +1,65 @@
+
+"""
+void main() {
+  runApp(MyApp());
+}
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Posts'),
+        ),
+        body: FutureBuilder<List<Post>>(
+          future: PostService.fetchPosts(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Erro na requisição!'));
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(child: Text('No posts available'));
+            } else {
+              final posts = snapshot.data!;
+              return ListView.builder(
+                itemCount: posts.length,
+                itemBuilder: (context, index) {
+                  final post = posts[index];
+                  return ListTile(
+                    title: Text(post.title),
+                    subtitle: Text(post.body),
+                  );
+                },
+              );
+            }
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class PostService {
+  static Future<List<Post>> fetchPosts() async {
+    var url = "https://jsonplaceholder.typicode.com/posts";
+    var response = await ApiService.request(
+      url: url,
+      verb: HttpVerb.get,
+      fromJson: (json) => (json as List)
+          .map((e) => Post.fromJson(e))
+          .toList(),
+    );
+
+    if (response.data != null) {
+      return response.data!;
+    } else {
+      throw Exception('Failed to load posts');
+    }
+  }
+}
+"""

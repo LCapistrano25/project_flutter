@@ -1,30 +1,72 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-class RestService {
-  static Future<http.Response> request({
+enum HttpVerb { get, post, put, delete }
+
+class ApiResponse<T> {
+  final T? data;
+  final int statusCode;
+
+  ApiResponse({
+    required this.data,
+    required this.statusCode,
+  });
+}
+
+class ApiService {
+  static Future<ApiResponse<T>> request<T>({
     required String url,
-    required String method,
+    required HttpVerb verb,
     Map<String, dynamic>? body,
     Map<String, String>? headers,
+    required T Function(dynamic json) fromJson,
   }) async {
-    final uri = Uri.parse(url);
-    final defaultHeaders = {'Content-Type': 'application/json'};
-    final combinedHeaders = {...defaultHeaders, ...?headers};
+    http.Response? response;
+    final defaultHeaders = {
+      'Content-Type': 'application/json',
+      ...?headers,
+    };
 
-    switch (method.toUpperCase()) {
-      case 'GET':
-        return await http.get(uri, headers: combinedHeaders);
-      case 'POST':
-        return await http.post(uri, headers: combinedHeaders, body: jsonEncode(body));
-      case 'PUT':
-        return await http.put(uri, headers: combinedHeaders, body: jsonEncode(body));
-      case 'DELETE':
-        return await http.delete(uri, headers: combinedHeaders, body: jsonEncode(body));
-      case 'PATCH':
-        return await http.patch(uri, headers: combinedHeaders, body: jsonEncode(body));
-      default:
-        throw UnsupportedError('Método HTTP não suportado: $method');
+    switch (verb) {
+      case HttpVerb.get:
+        response = await http.get(Uri.parse(url), headers: defaultHeaders);
+        break;
+      case HttpVerb.post:
+        response = await http.post(
+          Uri.parse(url),
+          headers: defaultHeaders,
+          body: jsonEncode(body),
+        );
+        break;
+      case HttpVerb.put:
+        response = await http.put(
+          Uri.parse(url),
+          headers: defaultHeaders,
+          body: jsonEncode(body),
+        );
+        break;
+      case HttpVerb.delete:
+        response = await http.delete(
+          Uri.parse(url),
+          headers: defaultHeaders,
+          body: jsonEncode(body),
+        );
+        break;
+    }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final decoded = jsonDecode(response.body);
+      final data = fromJson(decoded);
+      return ApiResponse<T>(
+        data: data,
+        statusCode: response.statusCode,
+      );
+    } else {
+      return ApiResponse<T>(
+        data: null,
+        statusCode: response.statusCode,
+      );
     }
   }
 }
+
